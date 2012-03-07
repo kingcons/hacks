@@ -1,0 +1,9 @@
+#!/bin/sh
+sbcl --noinform --eval "(ql:quickload 'quickproject)" \
+     --eval "(declaim (sb-ext:muffle-conditions style-warning))" \
+     --load "/home/redline/.quickprojectrc" \
+     --eval "(quickproject:make-project \"${1}\")" \
+     --eval "(progn (terpri) (sb-ext:quit))"
+
+cd $1; git init; git add .; git commit -m 'Initial commit.'; cd -
+echo "Project Created: ${1}"
