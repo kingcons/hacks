@@ -4,8 +4,7 @@
 ;; Portmanteau of Kragen and Craven...
 ;; though considering the site, I don't think this scraping is contemptible behavior. :)
 (defpackage :kraven
-  (:use :cl)
-  (:import-from :drakma #:http-request))
+  (:use :cl))
 
 (in-package :kraven)
 
@@ -29,22 +28,25 @@ is present, prepend each link with it."
 (defun download-gz-file (url directory)
   "Download a gzipped file from URL, decompress it and store it under DIRECTORY."
   (let ((pathname (merge-pathnames (pathname-name url) directory)))
+    (ensure-directories-exist pathname)
     (with-open-file (out pathname
                          :direction :output
                          :element-type '(unsigned-byte 8)
                          :if-exists :supersede
                          :if-does-not-exist :create)
-      (chipz:decompress out 'chipz:gzip (http-request url)))
-    (format t "Successfully downloaded and extracted ~a to ~a.~%" url pathname)))
+      (chipz:decompress out 'chipz:gzip (drakma:http-request url)))
+    (format t "Successfully downloaded and extracted ~a to ~a.~%~%" url pathname)))
+
+(defun download-mailing-list (list-url target-dir)
+  "Download the monthly archives at LIST-URL into TARGET-DIR and extract them."
+  (get-tarball-urls (drakma:http-request list-url)
+                    (lambda (gz) (download-gz-file gz target-dir))
+                    list-url))
 
 (defun main ()
   "Loop over *kragen-lists*, retrieving the list of gzipped files on each list.
 Create a directory named after the list under *STORAGE-BASE*, then download and
 decompress each gzipped file into that directory and inform the user."
-  (loop for (name . list-url) in *kragen-lists*
-     with directory = (string-downcase (string name))
-     with path = (merge-pathnames (format nil "~a/" directory) *storage-base*)
-     do (ensure-directories-exist path)
-        (get-tarball-urls (http-request list-url)
-                          (lambda (gz) (download-gz-file gz path))
-                          list-url)))
+  (loop for (list-name . list-url) in *kragen-lists*
+     for path = (merge-pathnames (format nil "~(~a~)/" list-name) *storage-base*)
+     do (download-mailing-list list-url path)))
