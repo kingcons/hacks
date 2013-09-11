@@ -5,8 +5,10 @@ from pyechonest import song
 from pyechonest import track
 from pyechonest import util
 
+chromatic_scale = ['C', 'C#', 'D', 'Eb', 'E', 'F',
+                   'F#', 'G', 'Ab', 'A', 'Bb', 'B']
 track_metadata = []
-track_uploads = []
+track_pending = []
 
 with open('/home/redline/.echonest', 'r') as f:
     config.ECHO_NEST_API_KEY = f.readline()
@@ -22,9 +24,15 @@ def song_lookup(artist, title):
         track_metadata.append(search)
     except IndexError:
         print "Could not find match for %s, %s." % (artist, title)
-        track_uploads.append("{0} - {1}".format(artist, title))
-#        print "Please enter the path of the file to analyze: "
-#        path = raw_input()
+        path = raw_input('Please enter the mp3 path: ')
+        track_pending.append(create_from_path(path))
+
+def fetch_track_data():
+    group_by_5 = zip(*[iter(tracks)]*5)
+    for group in group_by_5:
+        for artist, title in group:
+            song_lookup(artist, title)
+        time.sleep(60)
 
 def create_from_path(path):
     try:
@@ -34,23 +42,19 @@ def create_from_path(path):
         print "Couldn't create track from file."
         return e
 
-def fetch_track_data():
-    group_by_5 = zip(*[iter(tracks)]*5)
-    for group in group_by_5:
-        for artist, title in group:
-            song_lookup(artist, title)
-        time.sleep(60)
-
-def track_tempo(obj):
-    return obj.audio_summary['tempo']
-
 def show_sorted_tracks(tracks):
-    for t in sorted(tracks, key=track_tempo):
-        print "{0} - {1} has tempo {2}".format(t.artist_name,
-                                               t.title,
-                                               t.audio_summary['tempo'])
+    for t in sorted(tracks, key=lambda x: x.audio_summary['tempo']):
+        meta = t.audio_summary
+        formatter = "{0} - {1} has tempo {2}, key {3}"
+        print formatter.format(t.artist_name,
+                               t.title,
+                               meta['tempo'],
+                               chromatic_scale[meta['key']])
 
-fetch_track_data()
-print
-show_sorted_tracks(track_metadata)
+def main():
+    fetch_track_data()
+    print
+    show_sorted_tracks(track_metadata)
+
+main()
 from IPython import embed; embed()
