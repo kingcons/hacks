@@ -10,13 +10,13 @@ chromatic_scale = ['C', 'C#', 'D', 'Eb', 'E', 'F',
 track_metadata = []
 track_pending = []
 
-with open('/home/redline/.echonest', 'r') as f:
-    config.ECHO_NEST_API_KEY = f.readline()
-
-with open('/home/redline/.mixtape', 'r') as f:
-    text = f.read()
-    lines = text.split('\n')
-    tracks = [s.split(' - ') for s in lines if s != '']
+def initialize():
+    with open('/home/redline/.echonest', 'r') as f:
+        config.ECHO_NEST_API_KEY = f.readline()
+    with open('/home/redline/.mixtape', 'r') as f:
+        text = f.read()
+        lines = text.split('\n')
+        return [s.split(' - ') for s in lines if s != '']
 
 def song_lookup(artist, title):
     try:
@@ -27,7 +27,7 @@ def song_lookup(artist, title):
         path = raw_input('Please enter the mp3 path: ')
         track_pending.append(create_from_path(path))
 
-def fetch_track_data():
+def fetch_track_data(tracks):
     group_by_5 = zip(*[iter(tracks)]*5)
     for group in group_by_5:
         for artist, title in group:
@@ -52,7 +52,8 @@ def show_sorted_tracks(tracks):
                                chromatic_scale[meta['key']])
 
 def main():
-    fetch_track_data()
+    tracks = initialize()
+    fetch_track_data(tracks)
     print
     show_sorted_tracks(track_metadata)
 
