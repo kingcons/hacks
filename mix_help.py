@@ -7,6 +7,7 @@ from pyechonest import util
 
 chromatic_scale = ['C', 'C#', 'D', 'Eb', 'E', 'F',
                    'F#', 'G', 'Ab', 'A', 'Bb', 'B']
+mode_enum = ['minor', 'major']
 track_metadata = []
 track_pending = []
 
@@ -24,8 +25,8 @@ def song_lookup(artist, title):
         track_metadata.append(search)
     except IndexError:
         print "Could not find match for %s, %s." % (artist, title)
-        path = raw_input('Please enter the mp3 path: ')
-        track_pending.append(create_from_path(path))
+#        path = raw_input('Please enter the mp3 path: ')
+#        track_pending.append(create_from_path(path))
 
 def fetch_track_data(tracks):
     group_by_5 = zip(*[iter(tracks)]*5)
@@ -45,10 +46,11 @@ def create_from_path(path):
 def show_sorted_tracks(tracks):
     for t in sorted(tracks, key=lambda x: x.audio_summary['tempo']):
         meta = t.audio_summary
-        formatter = "{0} - {1} has tempo {2}, key {3}"
+        formatter = "{0} - {1} has tempo {2}, mode {3}, key {4}"
         print formatter.format(t.artist_name,
                                t.title,
                                meta['tempo'],
+                               mode_enum[meta['mode']],
                                chromatic_scale[meta['key']])
 
 def main():
