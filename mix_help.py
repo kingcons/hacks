@@ -1,9 +1,12 @@
 #!/usr/bin/env python
+
+import os
 import time
 from pyechonest import config
 from pyechonest import song
 from pyechonest import track
 from pyechonest import util
+from subprocess import check_output
 
 chromatic_scale = ['C', 'C#', 'D', 'Eb', 'E', 'F',
                    'F#', 'G', 'Ab', 'A', 'Bb', 'B']
@@ -12,12 +15,19 @@ track_metadata = []
 track_pending = []
 
 def initialize():
-    with open('/home/redline/.echonest', 'r') as f:
+    with open(os.path.expanduser('~/.echonest'), 'r') as f:
         config.ECHO_NEST_API_KEY = f.readline()
-    with open('/home/redline/.mixtape', 'r') as f:
-        text = f.read()
-        lines = text.split('\n')
-        return [s.split(' - ') for s in lines if s != '']
+
+def get_mix_md5s():
+    with open(os.path.expanduser('~/.mixtape_files'), 'r') as f:
+        files = f.readlines()
+        md5sums = [check_output(['md5sum', f]) for f in files]
+        return [md5.split()[0] for md5 in md5sums]
+
+def get_mix_songs():
+    with open(os.path.expanduser('~/.mixtape'), 'r') as f:
+        songs = f.readlines()
+        return [s.split(' - ') for s in songs if s != '']
 
 def song_lookup(artist, title):
     try:
@@ -25,12 +35,17 @@ def song_lookup(artist, title):
         track_metadata.append(search)
     except IndexError:
         print "Could not find match for %s, %s." % (artist, title)
-#        path = raw_input('Please enter the mp3 path: ')
-#        track_pending.append(create_from_path(path))
+        path = raw_input('Please enter the mp3 path: ')
+        track_pending.append(create_from_path(path))
 
-def fetch_track_data(tracks):
-    group_by_5 = zip(*[iter(tracks)]*5)
-    for group in group_by_5:
+def fetch_track_data(md5s):
+    group_by_10 = zip(*[iter(md5s)]*10)
+    for md5 in group_by_10:
+        track_metadata.append(track.track_from_md5(md5))
+
+def fetch_song_data(tracks):
+    group_by_10 = zip(*[iter(tracks)]*10)
+    for group in group_by_10:
         for artist, title in group:
             song_lookup(artist, title)
         time.sleep(60)
@@ -54,10 +69,16 @@ def show_sorted_tracks(tracks):
                                chromatic_scale[meta['key']])
 
 def main():
-    tracks = initialize()
-    fetch_track_data(tracks)
+    initialize()
+    if os.path.isfile(os.path.expanduser('~/.mixtape_files')):
+        md5s = get_mix_md5s()
+        fetch_track_data(md5s)
+    else:
+        songs = get_mix_songs()
+        fetch_song_data(songs)
     print
     show_sorted_tracks(track_metadata)
+    print
 
 main()
 from IPython import embed; embed()
