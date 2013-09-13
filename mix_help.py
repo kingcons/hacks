@@ -11,6 +11,7 @@ from subprocess import check_output
 chromatic_scale = ['C', 'C#', 'D', 'Eb', 'E', 'F',
                    'F#', 'G', 'Ab', 'A', 'Bb', 'B']
 mode_enum = ['minor', 'major']
+track_md5s = {}
 track_metadata = []
 track_pending = []
 
@@ -21,8 +22,10 @@ def initialize():
 def get_mix_md5s():
     with open(os.path.expanduser('~/.mixtape_files'), 'r') as f:
         files = f.readlines()
-        md5sums = [check_output(['md5sum', f]) for f in files]
-        return [md5.split()[0] for md5 in md5sums]
+        for f in files:
+            path = f.strip()
+            track_md5s[path] = check_output(['md5sum', path]).split()[0]
+        return track_md5s
 
 def get_mix_songs():
     with open(os.path.expanduser('~/.mixtape'), 'r') as f:
@@ -40,8 +43,14 @@ def song_lookup(artist, title):
 
 def fetch_track_data(md5s):
     group_by_10 = zip(*[iter(md5s)]*10)
-    for md5 in group_by_10:
-        track_metadata.append(track.track_from_md5(md5))
+    for group in group_by_10:
+        for path in group:
+            try:
+                md5 = track_md5s[path]
+                track_metadata.append(track.track_from_md5(md5))
+            except util.EchoNestAPIError:
+                print "Could not find match for file %s" % path
+        time.sleep(60)
 
 def fetch_song_data(tracks):
     group_by_10 = zip(*[iter(tracks)]*10)
