@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+## TODO:
+# Add helper fn to upload a track.
+# Add helper fn to make tracklike object from song/audio_summary?
+
 import os
 import time
 from pyechonest import config
@@ -11,83 +15,65 @@ from subprocess import check_output
 chromatic_scale = ['C', 'C#', 'D', 'Eb', 'E', 'F',
                    'F#', 'G', 'Ab', 'A', 'Bb', 'B']
 mode_enum = ['minor', 'major']
-track_md5s = {}
-track_metadata = []
-track_pending = []
+track_metadata = {}
+mixtape_files = []
 
 def initialize():
     with open(os.path.expanduser('~/.echonest'), 'r') as f:
         config.ECHO_NEST_API_KEY = f.readline()
 
-def get_mix_md5s():
+def get_md5sum(path):
+    return check_output(['md5sum', path]).split()[0]
+
+def short_path(path):
+    return os.path.basename(path)
+
+def add_mixtape_song(path):
+    if os.path.exists(path):
+        mixtape_files.append(path)
+    else:
+        print "The file '%s' was not found." % path
+
+def add_mixtape_songs():
     with open(os.path.expanduser('~/.mixtape_files'), 'r') as f:
-        files = f.readlines()
-        for f in files:
-            path = f.strip()
-            track_md5s[path] = check_output(['md5sum', path]).split()[0]
-        return track_md5s
+        for path in f.read().splitlines():
+            add_mixtape_song(path)
 
-def get_mix_songs():
-    with open(os.path.expanduser('~/.mixtape'), 'r') as f:
-        songs = f.readlines()
-        return [s.split(' - ') for s in songs if s != '']
-
-def song_lookup(artist, title):
+def get_track_data(path):
     try:
-        search = song.search(artist=artist, title=title)[0]
-        track_metadata.append(search)
-    except IndexError:
-        print "Could not find match for %s, %s." % (artist, title)
-        path = raw_input('Please enter the mp3 path: ')
-        track_pending.append(create_from_path(path))
+        md5 = get_md5sum(path)
+        shortname = short_path(path)
+        track_metadata[shortname] = track.track_from_md5(md5)
+    except util.EchoNestAPIError:
+        print "Couldn't find track '%s'. Try song.search?" % shortname
 
-def fetch_track_data(md5s):
-    group_by_10 = zip(*[iter(md5s)]*10)
-    for group in group_by_10:
-        for path in group:
-            try:
-                md5 = track_md5s[path]
-                track_metadata.append(track.track_from_md5(md5))
-            except util.EchoNestAPIError:
-                print "Could not find match for file %s" % path
+def get_echonest_data():
+    # It would be better to rate limit with a context manager here.
+    for group_by_10 in zip(*[iter(mixtape_files)]*10):
+        for path in group_by_10:
+            get_track_data(path)
         time.sleep(60)
 
-def fetch_song_data(tracks):
-    group_by_10 = zip(*[iter(tracks)]*10)
-    for group in group_by_10:
-        for artist, title in group:
-            song_lookup(artist, title)
-        time.sleep(60)
-
-def create_from_path(path):
+def display_metadata(path, data):
+    formatter = "{0} is {1} bpm and is in {2} {3}."
     try:
-        result = track.track_from_filename(path)
-        return result
-    except util.EchoNestAPIError, e:
-        print "Couldn't create track from file."
-        return e
+        print formatter.format(path,
+                               data.tempo,
+                               chromatic_scale[data.key],
+                               mode_enum[data.mode])
+    except AttributeError, e:
+        print "Data for '%s' was not a Track-like object." % path
+        print e.message
 
-def show_sorted_tracks(tracks):
-    for t in sorted(tracks, key=lambda x: x.audio_summary['tempo']):
-        meta = t.audio_summary
-        formatter = "{0} - {1} has tempo {2}, mode {3}, key {4}"
-        print formatter.format(t.artist_name,
-                               t.title,
-                               meta['tempo'],
-                               mode_enum[meta['mode']],
-                               chromatic_scale[meta['key']])
+def show_sorted_tracks():
+    for path, metadata in track_metadata.items():
+        display_metadata(path, metadata)
 
 def main():
     initialize()
-    if os.path.isfile(os.path.expanduser('~/.mixtape_files')):
-        md5s = get_mix_md5s()
-        fetch_track_data(md5s)
-    else:
-        songs = get_mix_songs()
-        fetch_song_data(songs)
-    print
-    show_sorted_tracks(track_metadata)
-    print
+    add_mixtape_songs()
+    get_echonest_data()
+    show_sorted_tracks()
 
 main()
 from IPython import embed; embed()
