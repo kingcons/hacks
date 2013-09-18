@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 ## TODO:
-# Add helper fn to upload a track.
-# Add helper fn to make tracklike object from song/audio_summary?
+# In case of missing track, prompt for artist and title,
+# then song.search and add result. Make display_metadata handle both types. :-C
 
 import os
 import time
@@ -66,8 +66,17 @@ def display_metadata(path, data):
         print e.message
 
 def show_sorted_tracks():
+    print "\n---- Results ----\n"
     for path, metadata in track_metadata.items():
         display_metadata(path, metadata)
+
+## Helpers
+
+def create_track_from_path(path):
+    try:
+        return track.track_from_filename(path)
+    except util.EchoNestAPIError:
+        print "Could not create track from file"
 
 def main():
     initialize()
