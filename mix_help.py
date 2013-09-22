@@ -6,6 +6,7 @@
 
 import itertools
 import os
+import pickle
 import time
 from pyechonest import config
 from pyechonest import song
@@ -13,6 +14,7 @@ from pyechonest import track
 from pyechonest import util
 from subprocess import check_output
 
+PICKLE_BACKUP = os.path.expanduser('~/.mixtape_data')
 chromatic_scale = ['C', 'C#', 'D', 'Eb', 'E', 'F',
                    'F#', 'G', 'Ab', 'A', 'Bb', 'B']
 mode_enum = ['minor', 'major']
@@ -55,7 +57,7 @@ def group_by(n, iterable):
 def get_echonest_data():
     # It would be better to rate limit with a context manager here.
     for group in group_by(10, mixtape_files):
-        for path in group:
+        for path in filter(None, group):
             get_track_data(path)
         time.sleep(60)
 
@@ -73,6 +75,14 @@ def show_sorted_tracks():
             display_metadata(path, metahash['tempo'], metahash['key'], metahash['mode'])
 
 ## Helpers
+
+def save_metadata():
+    with open(PICKLE_BACKUP, 'r') as f:
+        pickle.dump(track_metadata, f)
+
+def load_metadata():
+    with open(PICKLE_BACKUP, 'r') as f:
+        pickle.load(f)
 
 def create_track_from_path(path):
     try:
