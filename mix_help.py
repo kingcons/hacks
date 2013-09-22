@@ -2,7 +2,7 @@
 
 ## TODO:
 # In case of missing track, prompt for artist and title,
-# then song.search and add result. Make display_metadata handle both types. :-C
+# then song.search and add result?
 
 import os
 import time
@@ -54,21 +54,18 @@ def get_echonest_data():
             get_track_data(path)
         time.sleep(60)
 
-def display_metadata(path, data):
+def display_metadata(path, tempo, key, mode):
     formatter = "{0} is {1} bpm and is in {2} {3}."
-    try:
-        print formatter.format(path,
-                               data.tempo,
-                               chromatic_scale[data.key],
-                               mode_enum[data.mode])
-    except AttributeError, e:
-        print "Data for '%s' was not a Track-like object." % path
-        print e.message
+    print formatter.format(path, tempo, chromatic_scale[key], mode_enum[mode])
 
 def show_sorted_tracks():
     print "\n---- Results ----\n"
     for path, metadata in track_metadata.items():
-        display_metadata(path, metadata)
+        if isinstance(metadata, track.Track):
+            display_metadata(path, metadata.tempo, metadata.key, metadata.mode)
+        else:
+            metahash = metadata.audio_summary
+            display_metadata(path, metahash['tempo'], metahash['key'], metahash['mode'])
 
 ## Helpers
 
