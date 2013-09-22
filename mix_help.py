@@ -63,7 +63,7 @@ def display_metadata(path, tempo, key, mode):
     formatter = "{0} is {1} bpm and is in {2} {3}."
     print formatter.format(path, tempo, chromatic_scale[key], mode_enum[mode])
 
-def show_sorted_tracks():
+def show_results():
     print "\n---- Results ----\n"
     for path, metadata in track_metadata.items():
         if isinstance(metadata, track.Track):
@@ -91,7 +91,7 @@ def create_track_from_path(path):
 def main():
     add_mixtape_songs()
     get_echonest_data()
-    show_sorted_tracks()
+    show_results()
 
 initialize()
 from IPython import embed; embed()
