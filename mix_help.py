@@ -1,9 +1,5 @@
 #!/usr/bin/env python
 
-## TODO:
-# In case of missing track, prompt for artist and title,
-# then song.search and add result?
-
 import itertools
 import os
 import pickle
@@ -19,6 +15,7 @@ chromatic_scale = ['C', 'C#', 'D', 'Eb', 'E', 'F',
                    'F#', 'G', 'Ab', 'A', 'Bb', 'B']
 mode_enum = ['minor', 'major']
 track_metadata = {}
+track_missing = []
 mixtape_files = []
 
 def initialize():
@@ -48,6 +45,7 @@ def get_track_data(path):
         shortname = short_path(path)
         track_metadata[shortname] = track.track_from_md5(md5)
     except util.EchoNestAPIError:
+        track_missing.append(path)
         print "Couldn't find track '%s'. Try song.search?" % shortname
 
 def group_by(n, iterable):
@@ -77,7 +75,7 @@ def show_sorted_tracks():
 ## Helpers
 
 def save_metadata():
-    with open(PICKLE_BACKUP, 'r') as f:
+    with open(PICKLE_BACKUP, 'w') as f:
         pickle.dump(track_metadata, f)
 
 def load_metadata():
@@ -91,10 +89,9 @@ def create_track_from_path(path):
         print "Could not create track from file"
 
 def main():
-    initialize()
     add_mixtape_songs()
     get_echonest_data()
     show_sorted_tracks()
 
-main()
+initialize()
 from IPython import embed; embed()
