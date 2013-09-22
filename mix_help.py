@@ -4,6 +4,7 @@
 # In case of missing track, prompt for artist and title,
 # then song.search and add result?
 
+import itertools
 import os
 import time
 from pyechonest import config
@@ -47,10 +48,14 @@ def get_track_data(path):
     except util.EchoNestAPIError:
         print "Couldn't find track '%s'. Try song.search?" % shortname
 
+def group_by(n, iterable):
+    args = [iter(iterable)] * n
+    return itertools.izip_longest(*args)
+
 def get_echonest_data():
     # It would be better to rate limit with a context manager here.
-    for group_by_10 in zip(*[iter(mixtape_files)]*10):
-        for path in group_by_10:
+    for group in group_by(10, mixtape_files):
+        for path in group:
             get_track_data(path)
         time.sleep(60)
 
