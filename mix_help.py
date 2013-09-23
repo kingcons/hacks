@@ -10,13 +10,26 @@ from pyechonest import track
 from pyechonest import util
 from subprocess import check_output
 
-PICKLE_BACKUP = os.path.expanduser('~/.mixtape_data')
+# NOTE: We treat echonest's c-sharp as d-flat for the camelot mixing system.
+camelot_scale = {'Ab minor': '1A',  'B major': '1B',
+                 'Eb minor': '2A',  'F# major': '2B',
+                 'Bb minor': '3A',  'C# major': '3B',
+                 'F minor': '4A',   'Ab major': '4B',
+                 'C minor': '5A',   'Eb major': '5B',
+                 'G minor': '6A',   'Bb major': '6B',
+                 'D minor': '7A',   'F major': '7B',
+                 'A minor': '8A',   'C major': '8B',
+                 'E minor': '9A',   'G major': '9B',
+                 'B minor': '10A',  'D major': '10B',
+                 'F# minor': '11A', 'A major': '11B',
+                 'C# minor': '12A', 'E major': '12B'}
 chromatic_scale = ['C', 'C#', 'D', 'Eb', 'E', 'F',
                    'F#', 'G', 'Ab', 'A', 'Bb', 'B']
 mode_enum = ['minor', 'major']
 track_metadata = {}
 track_missing = []
 mixtape_files = []
+PICKLE_BACKUP = os.path.expanduser('~/.mixtape_data')
 
 def initialize():
     with open(os.path.expanduser('~/.echonest'), 'r') as f:
@@ -60,8 +73,9 @@ def get_echonest_data():
         time.sleep(60)
 
 def display_metadata(path, tempo, key, mode):
-    formatter = "{0} is {1} bpm and is in {2} {3}."
-    print formatter.format(path, tempo, chromatic_scale[key], mode_enum[mode])
+    formatter = "{0} is {1} bpm, Camelot block {2}; ({3})."
+    key_mode = "{0} {1}".format(chromatic_scale[key], mode_enum[mode])
+    print formatter.format(path, tempo, camelot_scale[key_mode], key_mode)
 
 def show_results():
     print "\n---- Results ----\n"
@@ -80,7 +94,7 @@ def save_metadata():
 
 def load_metadata():
     with open(PICKLE_BACKUP, 'r') as f:
-        pickle.load(f)
+        return pickle.load(f)
 
 def create_track_from_path(path):
     try:
