@@ -88,6 +88,15 @@ def show_results():
 
 ## Helpers
 
+def check_song(artist, title):
+    res = song.search(artist=artist, title=title)
+    if res:
+        meta = res[0].audio_summary # HAAAAAACKS
+        display_metadata("{0} - {1}".format(artist, title),
+                         meta['tempo'],
+                         meta['key'],
+                         meta['mode'])
+
 def save_metadata():
     with open(PICKLE_BACKUP, 'w') as f:
         pickle.dump(track_metadata, f)
